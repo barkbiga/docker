@@ -6,6 +6,8 @@ services:
       TYPE: MASTER
       UNICAST_HOSTS: master
       MIN_MASTERS: 1
+    networks:
+      - elk_net
     deploy:
       replicas: 1
       update_config:
@@ -18,6 +20,8 @@ services:
       TYPE: DATA
       UNICAST_HOSTS: master
       ES_JAVA_OPTS: "-Xmx2g -Xms2g"
+    networks:
+      - elk_net
     deploy:
       replicas: 2
       update_config:
@@ -28,6 +32,8 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    networks:
+      - elk_net
     environment:
       TYPE: GATEWAY
       UNICAST_HOSTS: master
@@ -35,6 +41,8 @@ services:
     image: itzg/elasticsearch
     ports:
       - "9222:9200"
+    networks:
+      - elk_net
     environment:
       TYPE: INGEST
       UNICAST_HOSTS: master
