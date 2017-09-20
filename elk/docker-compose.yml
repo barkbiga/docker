@@ -6,34 +6,27 @@ services:
       TYPE: MASTER
       UNICAST_HOSTS: master
       MIN_MASTERS: 1
-    networks:
-      - elk_net
-    deploy:
-      replicas: 1
-      update_config:
-        parallelism: 1
   data:
     image: itzg/elasticsearch
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - "/usr/share/elasticsearch/data:/usr/share/elasticsearch/data"
     environment:
       TYPE: DATA
       UNICAST_HOSTS: master
       ES_JAVA_OPTS: "-Xmx2g -Xms2g"
-    networks:
-      - elk_net
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 60s
+  data2:
+    image: itzg/elasticsearch
+    volumes:
+      - "/usr/share/elasticsearch/data2:/usr/share/elasticsearch/data"
+    environment:
+      TYPE: DATA
+      UNICAST_HOSTS: master
+      ES_JAVA_OPTS: "-Xmx2g -Xms2g"
   gateway:
     image: itzg/elasticsearch
     ports:
       - "9200:9200"
       - "9300:9300"
-    networks:
-      - elk_net
     environment:
       TYPE: GATEWAY
       UNICAST_HOSTS: master
@@ -41,26 +34,9 @@ services:
     image: itzg/elasticsearch
     ports:
       - "9222:9200"
-    networks:
-      - elk_net
     environment:
       TYPE: INGEST
       UNICAST_HOSTS: master
-#  elasticsearch:
-#    build:
-#      context: ./elasticsearch
-#      dockerfile: Dockerfile
-#    volumes:
-#      - ./elasticsearch/configuration/elasticsearch.yml:/var/lib/elasticsearch/config/elasticsearch.yml
-#      - esdata:/usr/share/elasticsearch/data
-#    ports:
-#      - "9200:9200"
-#      - "9300:9300"
-#    networks:
-#      - elk_net
-#    environment:
-#      ES_JAVA_OPTS: "-Xmx1g -Xms1g"
-#      bootstrap.memory_lock: true
   kibana:
     build:
       context: ./kibana
@@ -69,8 +45,6 @@ services:
       - ./kibana/configuration/kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
       - "5601:5601"
-    networks:
-      - elk_net
     depends_on:
       - gateway  
       
@@ -83,13 +57,9 @@ services:
       - "5000:5000"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    networks:
-      - elk_net
     depends_on:
       - gateway
 networks:
-  elk_net:
-    driver: bridge
   kafka_default:
     external: true
 volumes:
