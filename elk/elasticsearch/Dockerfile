@@ -1,1 +1,1 @@
-FROM elasticsearch:5.5.2-alpine
+FROM docker.elastic.co/elasticsearch/elasticsearch:6.0.0-beta2

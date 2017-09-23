@@ -1,1 +1,2 @@
-FROM logstash:5.5.2-alpine
+FROM logstash
+RUN logstash-plugin install x-pack
