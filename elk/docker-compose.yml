@@ -1,42 +1,113 @@
-version: "3"
+version: '3'
+
 services:
   master:
-    image: itzg/elasticsearch
-    environment:
-      TYPE: MASTER
-      UNICAST_HOSTS: master
-      MIN_MASTERS: 1
-  data:
-    image: itzg/elasticsearch
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
+    container_name: master
     volumes:
-      - "/usr/share/elasticsearch/data:/usr/share/elasticsearch/data"
+      - es_data_master:/usr/share/elasticsearch/data
     environment:
-      TYPE: DATA
-      UNICAST_HOSTS: master
-      ES_JAVA_OPTS: "-Xmx2g -Xms2g"
+      - cluster.name=docker-cluster
+      - xpack.security.enabled=false
+      - node.master=true 
+      - node.data=false 
+      - node.ingest=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - esnet
+  data1:
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
+    container_name: data1
+    volumes:
+      - es_data_node1:/usr/share/elasticsearch/data
+    environment:
+      - cluster.name=docker-cluster
+      - xpack.security.enabled=false
+      - node.master=false 
+      - node.data=true 
+      - node.ingest=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - esnet
   data2:
-    image: itzg/elasticsearch
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
+    container_name: data2
     volumes:
-      - "/usr/share/elasticsearch/data2:/usr/share/elasticsearch/data"
+      - es_data_node2:/usr/share/elasticsearch/data
     environment:
-      TYPE: DATA
-      UNICAST_HOSTS: master
-      ES_JAVA_OPTS: "-Xmx2g -Xms2g"
+      - cluster.name=docker-cluster
+      - xpack.security.enabled=false
+      - node.master=false 
+      - node.data=true 
+      - node.ingest=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - esnet
+  ingest:
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
+    container_name: ingest
+    volumes:
+      - es_data_ingest:/usr/share/elasticsearch/data
+    environment:
+      - cluster.name=docker-cluster
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - node.master=false 
+      - node.data=false 
+      - node.ingest=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=master"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - esnet
   gateway:
-    image: itzg/elasticsearch
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
     ports:
       - "9200:9200"
       - "9300:9300"
     environment:
-      TYPE: GATEWAY
-      UNICAST_HOSTS: master
-  ingest:
-    image: itzg/elasticsearch
-    ports:
-      - "9222:9200"
-    environment:
-      TYPE: INGEST
-      UNICAST_HOSTS: master
+      - cluster.name=docker-cluster
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - node.master=false 
+      - node.data=false 
+      - node.ingest=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=master"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - esnet
   kibana:
     build:
       context: ./kibana
@@ -47,7 +118,8 @@ services:
       - "5601:5601"
     depends_on:
       - gateway  
-      
+    networks:
+      - esnet      
   logstash:
     build: logstash/
     volumes:
@@ -59,9 +131,16 @@ services:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     depends_on:
       - gateway
+    networks:
+      - esnet
 networks:
-  kafka_default:
-    external: true
+  esnet:
 volumes:
-  esdata:
+  es_data_ingest:
+    driver: local
+  es_data_master:
+    driver: local
+  es_data_node1:
+    driver: local
+  es_data_node2:
     driver: local
